@@ -451,6 +451,7 @@ a { color: inherit; }
 .cv-side p { margin: 0 0 1.5rem; max-width: 40ch; opacity: 0.88; }
 .cv-side .small { margin-top: 1.25rem; font-size: 0.92rem; color: var(--mist); opacity: 1; }
 .cv-side .small a { color: var(--glacier); }
+.cv-pages { display: grid; gap: 1.25rem; min-width: 0; }
 .cv-sheet { margin: 0; background: #fff; border-radius: 6px; overflow: hidden; }
 .cv-sheet img { width: 100%; height: auto; }
 
