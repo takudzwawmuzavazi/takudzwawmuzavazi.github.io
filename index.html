@@ -57,7 +57,7 @@ a { color: inherit; }
   height: min(88vh, 860px);
   min-height: 520px;
   overflow: hidden;
-  background: var(--basalt-2);
+  background: var(--basalt-2) url('images/pine-forest-poster.jpg') center / cover no-repeat;
   isolation: isolate;
 }
 .hero video {
@@ -261,11 +261,8 @@ a { color: inherit; }
 <body>
 <main>
   <section class="hero" id="hero" aria-label="Aerial footage">
-    <video muted playsinline loop preload="auto" poster="images/pine-forest-poster.jpg" data-src="videos/pine-forest.mp4" aria-hidden="true"></video>
-    <video muted playsinline loop preload="none" poster="images/red-gully-poster.jpg" data-src="videos/red-gully.mp4" aria-hidden="true"></video>
-    <video muted playsinline loop preload="none" poster="images/river-forest-poster.jpg" data-src="videos/river-forest.mp4" aria-hidden="true"></video>
-    <video muted playsinline loop preload="none" poster="images/farmland-clouds-poster.jpg" data-src="videos/farmland-clouds.mp4" aria-hidden="true"></video>
-    <video muted playsinline loop preload="none" poster="images/forest-canopy-poster.jpg" data-src="videos/forest-canopy.mp4" aria-hidden="true"></video>
+    <video class="layer" muted playsinline webkit-playsinline preload="auto" poster="images/pine-forest-poster.jpg" aria-hidden="true"></video>
+    <video class="layer" muted playsinline webkit-playsinline preload="none" aria-hidden="true"></video>
 
     <header class="top">
       <div class="wrap">
@@ -277,6 +274,7 @@ a { color: inherit; }
             <button class="menu-parent" type="button" aria-expanded="false">About <span aria-hidden="true">▾</span></button>
             <div class="submenu">
               <a href="about.html">Quick bio</a>
+              <a href="conferences.html">Conferences</a>
               <a href="cv.html">CV</a>
             </div>
           </div>
@@ -333,25 +331,62 @@ a { color: inherit; }
   });
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // rotate the four aerial clips with a slow crossfade
-  var videos = [].slice.call(document.querySelectorAll('#hero video'));
+  /* Two players take turns: while one is on screen the other loads the next clip, and the
+     swap only happens once that clip can actually play. Phones get smaller files. */
+  var CLIPS = ['pine-forest', 'red-gully', 'river-forest', 'farmland-clouds', 'forest-canopy'];
+  var slim = window.matchMedia('(max-width: 820px)').matches ||
+             (navigator.connection && navigator.connection.saveData);
+  var DIR = slim ? 'videos/small/' : 'videos/';
+  var layers = [].slice.call(document.querySelectorAll('#hero video'));
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var SCENE_MS = 5000, current = -1;
-  function load(v) { if (!v.src) { v.src = v.dataset.src; v.preload = 'auto'; } }
-  function show(i) {
-    i = i % videos.length;
-    var v = videos[i];
-    load(v);
-    try { v.currentTime = 0; } catch (e) {}
-    var p = v.play(); if (p && p.catch) p.catch(function () {});
-    videos.forEach(function (x, j) { x.classList.toggle('on', j === i); });
-    var prev = current;
-    current = i;
-    if (prev >= 0 && prev !== i) setTimeout(function () { videos[prev].pause(); }, 1700);
-    load(videos[(i + 1) % videos.length]);
-    if (!reduce) setTimeout(function () { show(current + 1); }, SCENE_MS);
+  var SCENE_MS = 5000, idx = 0, front = 0, tries = 0;
+
+  function prepare(layer, i, done) {
+    var over = false;
+    function finish(ok) {
+      if (over) return;
+      over = true;
+      clearTimeout(timer);
+      layer.removeEventListener('canplay', good);
+      layer.removeEventListener('error', bad);
+      done(ok);
+    }
+    function good() { finish(true); }
+    function bad() { finish(false); }
+    var timer = setTimeout(bad, 15000);
+    layer.addEventListener('canplay', good);
+    layer.addEventListener('error', bad);
+    layer.poster = 'images/' + CLIPS[i] + '-poster.jpg';
+    layer.src = DIR + CLIPS[i] + '.mp4';
+    layer.loop = true;
+    layer.load();
   }
-  show(0);
+  function start(layer) { var p = layer.play(); if (p && p.catch) p.catch(function () {}); }
+
+  function next() {
+    var back = layers[1 - front], i = (idx + 1) % CLIPS.length;
+    prepare(back, i, function (ok) {
+      idx = i;
+      if (!ok) {                                   // skip a clip that will not load
+        tries++;
+        if (tries < CLIPS.length && !reduce) setTimeout(next, 400);
+        return;
+      }
+      tries = 0;
+      start(back);
+      back.classList.add('on');
+      var old = layers[front];
+      old.classList.remove('on');
+      setTimeout(function () { old.pause(); }, 1700);
+      front = 1 - front;
+      if (!reduce) setTimeout(next, SCENE_MS);
+    });
+  }
+
+  prepare(layers[0], 0, function (ok) {
+    if (ok) { start(layers[0]); layers[0].classList.add('on'); }
+    if (!reduce) setTimeout(next, SCENE_MS);
+  });
 
   // stretch the title to the width of the page, whatever font has loaded
   var title = document.querySelector('.statement h1');
