@@ -334,10 +334,7 @@ a { color: inherit; }
   /* Two players take turns: while one is on screen the other loads the next clip, and the
      swap only happens once that clip can actually play. Phones get smaller files. */
   var CLIPS = ['pine-forest', 'red-gully', 'river-forest', 'farmland-clouds', 'forest-canopy'];
-  var net = navigator.connection || {};
-  var wide = Math.round(window.innerWidth * (window.devicePixelRatio || 1));  // real pixels across the hero
-  var DIR = (net.saveData || /(^|-)2g$/.test(net.effectiveType || '')) ? 'videos/small/'
-          : wide <= 1300 ? 'videos/mid/' : 'videos/';
+  var DIR = 'videos/';
   var layers = [].slice.call(document.querySelectorAll('#hero video'));
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SCENE_MS = 5000, idx = 0, front = 0, tries = 0;
